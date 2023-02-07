@@ -5,6 +5,11 @@
 // until all of Emp.csv is read.
 
 #include <bits/stdc++.h>
+#include <cstdio>
+#include <iostream>
+#include <fstream>
+#include <string_view>
+
 using namespace std;
 
 // defines how many buffers are available in the Main Memory
@@ -56,6 +61,52 @@ void Print_Buffers(int cur_size) {
   }
 }
 
+void SortMain(int cur_size) {
+  // for (int i=0; i<cur_size; i++) {
+  //   printf("%d \n", i);
+  // }
+
+  int i, key, j;
+
+  for (i=1; i<cur_size; i++) {
+    key = buffers[i].eid;
+
+
+    j = i - 1;
+
+    while (j >= 0 && buffers[j].eid > key) {
+      std::swap(buffers[j+1],buffers[j]);
+      // buffers[j + 1] = buffers[j];
+      j = j - 1;
+    }
+    buffers[j + 1].eid = key;
+  }
+
+  Print_Buffers(cur_size);
+}
+
+void exportBuffers(int cur_size, int runs_idx) {
+
+  std::ofstream myfile;
+
+  std::string str = std::to_string(runs_idx);
+
+  myfile.open(str);
+
+  for (int i=0; i<cur_size; i++) {
+    myfile << buffers[i].eid;
+    myfile << ",";
+    myfile << buffers[i].ename;
+    myfile << ",";
+    myfile << buffers[i].age;
+    myfile << ",";
+    myfile << buffers[i].salary;
+    myfile << "\n";
+  }
+
+  myfile.close();
+}
+
 // Sort the buffers in main memory based on 'eid' and then store those sorted
 // records in a temporary file on disk (create a run and store it as a file on
 // disk). You can change the return type and arguments as you see fit.
@@ -77,6 +128,7 @@ int main() {
   // flags to check when relations are done being read
   bool flag = true;
   int cur_size = 0;
+  int runs_idx = 0;
 
   /*First Pass: The following loop will read each block, put it into
     main_memory, sort them, and then will put write them to a temporary file (as
@@ -102,8 +154,11 @@ int main() {
       cout << "Main Memory is full. Time to sort and store sorted blocks in a "
               "temporary file"
            << endl;
-      Print_Buffers(buffer_size);
-      //   SortMain("Attributes You Want");
+      // Print_Buffers(cur_size);
+      SortMain(cur_size);
+      Print_Buffers(cur_size);
+      exportBuffers(cur_size,runs_idx);
+      runs_idx += 1;
 
       // After sorting, start again. Clear memory and put the current tuple into
       // main memory.
