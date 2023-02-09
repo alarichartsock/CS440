@@ -8,7 +8,6 @@
 #include <cstdio>
 #include <iostream>
 #include <fstream>
-#include <string_view>
 
 using namespace std;
 
@@ -20,6 +19,7 @@ struct EmpRecord {
     string ename;
     int age;
     double salary;
+    int run_id;
 };
 EmpRecord buffers[buffer_size]; // this structure contains 22 buffers; available
                                 // as your main memory.
@@ -44,6 +44,8 @@ EmpRecord grab_emp_record(fstream &empin) {
         emp.age = stoi(word);
         getline(s, word, ',');
         emp.salary = stod(word);
+        getline(s, word, ',');
+        emp.run_id = stoi(word);
         return emp;
     } else {
         emp.eid = -1;
@@ -80,17 +82,19 @@ void sort_main(int cur_size) {
         buffers[j + 1].eid = key;
     }
 
-    print_buffers(cur_size);
+    //print_buffers(cur_size);
 }
 
 void export_buffers(int cur_size, int runs_idx) {
-    std::ofstream myfile;
+    ofstream myfile;
 
-    std::string str = std::to_string(runs_idx);
+    string str = to_string(runs_idx);
 
     myfile.open(str);
 
     for (int i=0; i<cur_size; i++) {
+        buffers[i].run_id = runs_idx;
+
         myfile << buffers[i].eid;
         myfile << ",";
         myfile << buffers[i].ename;
@@ -98,44 +102,126 @@ void export_buffers(int cur_size, int runs_idx) {
         myfile << buffers[i].age;
         myfile << ",";
         myfile << buffers[i].salary;
+        myfile << ",";
+        myfile << buffers[i].run_id;
         myfile << "\n";
     }
 
     myfile.close();
 }
 
-void write_final(int cur_size) {
-    printf("now writing the final output file\n");
-
+void write_to_final(EmpRecord record) {
     ofstream f;
-    f.open("EmpSorted.csv", ios::out | ios::trunc);
+    f.open("EmpSorted.csv", ios::out | ios::app);
 
-    for (int i=0; i<cur_size; i++) {
-        f << buffers[i].eid;
-        f << ",";
-        f << buffers[i].ename;
-        f << ",";
-        f << buffers[i].age;
-        f << ",";
-        f << buffers[i].salary;
-        f << "\n";
-    }
+    f << record.eid;
+    f << ",";
+    f << record.ename;
+    f << ",";
+    f << record.age;
+    f << ",";
+    f << record.salary;
+    f << "\n";
 
     f.close();
+}
+
+int count_lines(int j) {
+    ifstream f;
+    string s;
+    int count=0; 
+    f.open(to_string(j));
+    while(!f.eof()) {
+        getline(f, s);
+        count++;	
+    }
+    return count-1;
+}
+
+EmpRecord get_item(int run_file, int j) {
+    fstream run;
+    EmpRecord temp_record;
+    run.open(to_string(run_file), ios::in);
+
+    for (int i=0; i<j; i++) {
+        temp_record = grab_emp_record(run);
+    }
+    //printf("%d record in %d : %d \n", j, run_file, temp_record.eid);
+    run.close();
+    return temp_record;
 }
 
 // Merges your M-1 runs (from disk) using the buffers in main memory and stores
 // them in a sorted file called 'EmpSorted.csv'(The Final Output File). You can
 // change the return type and arguments as you see fit.
-void merge_runs() { 
-    printf("wow we are merging the runs\n");
+void merge_runs(int cur_size, int sort_size) { 
+    int current_file=0;
+    int runs_idx[cur_size];
+    for (int k=0; k<cur_size; k++)
+        runs_idx[k] = 1;
 
+    bool complete=false;
+
+    // add first element of each run
+    for (int j=0; j<cur_size; j++) {
+        fstream run;
+        run.open(to_string(j), ios::in);
+        EmpRecord temp_record = grab_emp_record(run);
+        buffers[j] = temp_record;
+        runs_idx[j]++;
+        //printf("%d ", temp_record.eid);
+        run.close();
+    }
+
+    // get the lowest id and add it to the sorted file
+    while (!complete) {
+        sort_main(sort_size);
+        printf("writing %d ", buffers[0].eid);
+        write_to_final(buffers[0]);
+        int temp = buffers[0].run_id, x=0;
+
+        // fill the spot with the next item in the run
+        if (runs_idx[temp] <= 22) {
+            buffers[0] = get_item(temp, runs_idx[temp]); 
+            runs_idx[temp]++;
+            //printf("in run #%d ", current_file);
+        }
+        // else, pick the next run with items left
+        else {
+            bool get=false;
+            while (get==false) {
+                if (runs_idx[x] <= 22) {
+                    buffers[0] = get_item(x, runs_idx[x]); 
+                    runs_idx[x]++;
+                    get=true;
+                }
+                x++;
+            }        
+        }
+        int c=0;
+        for (int i=0; i<cur_size; i++) {
+            if (runs_idx[i]==23) 
+                c++;
+        }
+        if (c==cur_size) {
+            complete=true;
+            break;
+        }
+    }
+    for (int i=0; i<22; i++) {
+        printf("buf[%d]: %d \n", i, buffers[i].eid);
+        sort_main(22);
+        write_to_final(buffers[i]);
+    }
+    cout << endl;
+    
 }
 
 int main() {
     // open file streams to read and write
     fstream input_file;
     input_file.open("Emp.csv", ios::in);
+    remove("EmpSorted.csv");
 
     // flags to check when relations are done being read
     bool flag = true;
@@ -153,8 +239,7 @@ int main() {
         // checks if filestream is empty
         if (single_EmpRecord.eid == -1) {
             flag = false;
-            print_buffers(cur_size); // The main_memory is not filled up but there are
-                                    // some leftover tuples that need to be sorted.
+            //print_buffers(cur_size); // The main_memory is not filled up but there are some leftover tuples that need to be sorted.
         }
         if (cur_size + 1 <= buffer_size) {
             // Memory is not full. Store the current record into a buffer.
@@ -163,12 +248,12 @@ int main() {
         } else {
             // Memory is now full. Sort the tuples in Main Memory and store them in a
             // temporary file (runs)
-            cout << "Main memory is full. Time to sort and store sorted blocks in a temporary file"
-                << endl;
+            //cout << "Main memory is full. Time to sort and store sorted blocks in a temporary file" << endl;
             // Print_Buffers(cur_size);
             sort_main(cur_size);
-            print_buffers(cur_size);
+            //print_buffers(cur_size);
             export_buffers(cur_size,runs_idx);
+
             runs_idx += 1;
 
             // After sorting, start again. Clear memory and put the current tuple into
@@ -188,12 +273,8 @@ int main() {
     // fstream sorted_file;
     // sorted_file.open("EmpSorted.csv", ios::out | ios::app);
 
-    bool flag_sorting_done = false;
-    while (!flag_sorting_done) {
-        merge_runs();
-        break;
-    }
-
+    merge_runs(runs_idx, 22);
+    
     // You can delete the temporary sorted files (runs) after you're done in order
     // to keep things clean and tidy.
 
