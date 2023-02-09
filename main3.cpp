@@ -204,7 +204,7 @@ void merge_runs(int cur_size) {
             buffers[0] = get_item(temp, runs_idx[temp]); 
             //printf("%d from run %d\n", buffers[0].eid, temp);
             if (temp==17)
-            printf("runs idx[%d]: %d\n", temp, runs_idx[temp]);
+            //printf("runs idx[%d]: %d\n", temp, runs_idx[temp]);
             runs_idx[temp]++;
         }
         // else, pick the next run with items left
@@ -226,7 +226,6 @@ void merge_runs(int cur_size) {
                     //printf("x:%d cs:%d\n",x,cur_size);
                     break;
                 }
-        
             }
         }
 
@@ -244,8 +243,7 @@ void merge_runs(int cur_size) {
     // clear the buffer
     sort_main(sizeof(buffers)/sizeof(buffers[0]));
     for (int i=0; i<sizeof(buffers)/sizeof(buffers[0]); i++) {
-        printf("buf[%d]: %d \n", i, buffers[i].eid);
-        
+        //printf("buf[%d]: %d \n", i, buffers[i].eid);
         write_to_final(buffers[i]);
     }
     cout << endl;
@@ -311,7 +309,7 @@ int main() {
     // fstream sorted_file;
     // sorted_file.open("EmpSorted.csv", ios::out | ios::app);
 
-    printf("%d\n", runs_idx+1);
+    //printf("%d\n", runs_idx+1);
 
     merge_runs(runs_idx+1);
     
