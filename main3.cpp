@@ -148,10 +148,31 @@ EmpRecord get_item(int run_file, int j) {
     return temp_record;
 }
 
+void pick_run(int runs_idx[], int cur_size) {
+    bool get=false;
+    int x=0;
+
+    while (get==false) {
+        if (runs_idx[x] <= count_lines(x)) {
+            buffers[0] = get_item(x, runs_idx[x]); 
+            printf("ex: %d from run %d\n", buffers[0].eid, x);
+            runs_idx[x]++;
+            get=true;
+        }
+        x++;
+        
+        if (x==cur_size) {
+            printf("x:%d cs:%d\n",x,cur_size);
+            break;
+        }
+        
+    }        
+}
+
 // Merges your M-1 runs (from disk) using the buffers in main memory and stores
 // them in a sorted file called 'EmpSorted.csv'(The Final Output File). You can
 // change the return type and arguments as you see fit.
-void merge_runs(int cur_size, int sort_size) { 
+void merge_runs(int cur_size) { 
     int current_file=0;
     int runs_idx[cur_size];
     for (int k=0; k<cur_size; k++)
@@ -170,34 +191,27 @@ void merge_runs(int cur_size, int sort_size) {
         run.close();
     }
 
-    // get the lowest id and add it to the sorted file
+// get the lowest id and add it to the sorted file
     while (!complete) {
-        sort_main(sort_size);
-        printf("writing %d ", buffers[0].eid);
+        sort_main(sizeof(buffers)/sizeof(buffers[0]));
+        //printf("writing %d ", buffers[0].eid);
         write_to_final(buffers[0]);
         int temp = buffers[0].run_id, x=0;
+        bool get=false;
 
         // fill the spot with the next item in the run
-        if (runs_idx[temp] <= 22) {
+        if (runs_idx[temp] <= count_lines(temp)) {
             buffers[0] = get_item(temp, runs_idx[temp]); 
+            printf("%d from run %d\n", buffers[0].eid, temp);
             runs_idx[temp]++;
-            //printf("in run #%d ", current_file);
         }
         // else, pick the next run with items left
         else {
-            bool get=false;
-            while (get==false) {
-                if (runs_idx[x] <= 22) {
-                    buffers[0] = get_item(x, runs_idx[x]); 
-                    runs_idx[x]++;
-                    get=true;
-                }
-                x++;
-            }        
+            pick_run(runs_idx, cur_size);
         }
         int c=0;
         for (int i=0; i<cur_size; i++) {
-            if (runs_idx[i]==23) 
+            if (runs_idx[i]==count_lines(i)+1) 
                 c++;
         }
         if (c==cur_size) {
@@ -205,9 +219,12 @@ void merge_runs(int cur_size, int sort_size) {
             break;
         }
     }
-    for (int i=0; i<22; i++) {
+
+    // clear the buffer
+    sort_main(sizeof(buffers)/sizeof(buffers[0]));
+    for (int i=0; i<sizeof(buffers)/sizeof(buffers[0]); i++) {
         printf("buf[%d]: %d \n", i, buffers[i].eid);
-        sort_main(22);
+        
         write_to_final(buffers[i]);
     }
     cout << endl;
@@ -273,7 +290,9 @@ int main() {
     // fstream sorted_file;
     // sorted_file.open("EmpSorted.csv", ios::out | ios::app);
 
-    merge_runs(runs_idx, 22);
+    printf("%d\n", runs_idx+1);
+
+    merge_runs(runs_idx+1);
     
     // You can delete the temporary sorted files (runs) after you're done in order
     // to keep things clean and tidy.
