@@ -155,14 +155,14 @@ void pick_run(int runs_idx[], int cur_size) {
     while (get==false) {
         if (runs_idx[x] <= count_lines(x)) {
             buffers[0] = get_item(x, runs_idx[x]); 
-            printf("ex: %d from run %d\n", buffers[0].eid, x);
+            //printf("ex: %d from run %d\n", buffers[0].eid, x);
             runs_idx[x]++;
             get=true;
         }
         x++;
         
         if (x==cur_size) {
-            printf("x:%d cs:%d\n",x,cur_size);
+            //printf("x:%d cs:%d\n",x,cur_size);
             break;
         }
         
@@ -202,16 +202,37 @@ void merge_runs(int cur_size) {
         // fill the spot with the next item in the run
         if (runs_idx[temp] <= count_lines(temp)) {
             buffers[0] = get_item(temp, runs_idx[temp]); 
-            printf("%d from run %d\n", buffers[0].eid, temp);
+            //printf("%d from run %d\n", buffers[0].eid, temp);
+            if (temp==17)
+            printf("runs idx[%d]: %d\n", temp, runs_idx[temp]);
             runs_idx[temp]++;
         }
         // else, pick the next run with items left
         else {
-            pick_run(runs_idx, cur_size);
+            bool get=false;
+            int x=0;
+
+            while (get==false) {
+                if (runs_idx[x] <= count_lines(x)) {
+                    buffers[0] = get_item(x, runs_idx[x]); 
+                    //printf("ex: %d from run %d\n", buffers[0].eid, x);
+                    runs_idx[x]++;
+                    //printf("runs idx[%d]: %d\n", x, runs_idx[x]);
+                    get=true;
+                }
+                x++;
+                
+                if (x==cur_size) {
+                    //printf("x:%d cs:%d\n",x,cur_size);
+                    break;
+                }
+        
+            }
         }
+
         int c=0;
         for (int i=0; i<cur_size; i++) {
-            if (runs_idx[i]==count_lines(i)+1) 
+            if (runs_idx[i]>=count_lines(i)) 
                 c++;
         }
         if (c==cur_size) {
