@@ -69,20 +69,17 @@ void sort_main(int cur_size) {
 
     int i, key, j;
 
-    for (i=1; i<cur_size; i++) {
+    for (i=0; i<cur_size; i++) {
         key = buffers[i].eid;
 
         j = i - 1;
 
         while (j >= 0 && buffers[j].eid > key) {
             std::swap(buffers[j+1],buffers[j]);
-            // buffers[j + 1] = buffers[j];
             j = j - 1;
         }
         buffers[j + 1].eid = key;
     }
-
-    //print_buffers(cur_size);
 }
 
 void export_buffers(int cur_size, int runs_idx) {
@@ -239,6 +236,9 @@ int main() {
         // checks if filestream is empty
         if (single_EmpRecord.eid == -1) {
             flag = false;
+
+            sort_main(cur_size);
+            export_buffers(cur_size,runs_idx);
             //print_buffers(cur_size); // The main_memory is not filled up but there are some leftover tuples that need to be sorted.
         }
         if (cur_size + 1 <= buffer_size) {
