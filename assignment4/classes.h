@@ -68,6 +68,10 @@ private:
     int i;	// The number of least-significant-bits of h(id) to check. Will need to increase i once n > 2^i
     int numRecords = 0;    // Records currently in index. Used to test whether to increase n
     int nextFreeBlock; // Next place to write a bucket. Should increment it by BLOCK_SIZE whenever a bucket is written to EmployeeIndex
+    float usedpercentage;
+    int capacity = 0;
+    int usedcapacity = 0;
+
     string fName;
 
     // Get record from input file (convert .csv row to Record data structure)
@@ -122,6 +126,8 @@ private:
         indexFile.seekp(nextFreeBlock);
 
         const char* buf = "0";
+        capacity = capacity + BLOCK_SIZE;
+
 
         for(int i=0; i<(BLOCK_SIZE-10); i++) {
             // Open brackets are used in place of excess space within the index file
@@ -147,6 +153,14 @@ private:
         int recordSize = record.size();
         int overflow;
 
+        usedpercentage = (float)usedcapacity / capacity;
+        printf("Inserted record of length %i, capacity is %i / %i = %f full \n", recordSize, usedcapacity, capacity, usedpercentage);
+
+        if (usedpercentage >= .70) {
+            printf("    Capacity condition met. Todo: Allocate new bucket \n");
+        }
+
+
         while(indexFile >> noskipws >> ch) {
             
             int currentSpot = blockStart + localLocation;
@@ -154,6 +168,7 @@ private:
             // If we have space then write record to open bucket
             if ((ch == '{') && ((blockEnd - currentSpot - 10) >= recordSize)) {
                 record.writeRecord(indexFile,currentSpot);
+                usedcapacity = usedcapacity + recordSize;
                 break;
             } 
             else if (ch == '$'){
@@ -191,11 +206,7 @@ private:
                     writeRecordToIndexFile(record,indexFile,overflow,overflow+BLOCK_SIZE);
                     break;
                 }
-                
-
-
             }
-
             localLocation++;
         }
     }
@@ -315,7 +326,7 @@ public:
                 if (record.id == id) {
                     record.print();
                 }
-                record.print();
+                // record.print();
             }
         }
 
