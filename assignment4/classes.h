@@ -153,14 +153,6 @@ private:
         int recordSize = record.size();
         int overflow;
 
-        usedpercentage = (float)usedcapacity / capacity;
-        printf("Inserted record of length %i, capacity is %i / %i = %f full \n", recordSize, usedcapacity, capacity, usedpercentage);
-
-        if (usedpercentage >= .70) {
-            printf("    Capacity condition met. Todo: Allocate new bucket \n");
-        }
-
-
         while(indexFile >> noskipws >> ch) {
             
             int currentSpot = blockStart + localLocation;
@@ -228,15 +220,84 @@ private:
 
         int bucketLoc = getLastBits(hash(record.id),i);
 
+        if (bucketLoc >= n) {
+            printf("Set bucket index MSB to 0\n");
+            bucketLoc &= ~(1 << (i-1));
+        }
+
         writeRecordToIndexFile(record, indexFile, blockDirectory[bucketLoc], blockDirectory[bucketLoc] + BLOCK_SIZE);
-
         numRecords += 1;
-        // Add record to the index in the correct block, creating a overflow block if necessary
 
-        // Take neccessary steps if capacity is reached:
-		// increase n; increase i (if necessary); place records in the new bucket that may have been originally misplaced due to a bit flip
+        usedpercentage = (float)usedcapacity / capacity;
 
+        printf(" Inserted record of length %i, into bucket %i capacity is %i / %i = %f full", record.size(), bucketLoc, usedcapacity, capacity, usedpercentage);
+        cout << "\t " << record.name << " " << record.id << "\n";
 
+        if (usedpercentage >= .70) {
+            printf("    Capacity condition met. Allocating new bucket. \n");
+
+            // Self explanatory. We need a new bucket to be allocated because we've met our capacity condition.
+            int newBucket = initBucket(indexFile);
+            
+            // Num digits that we need to address the new bucket
+            int digits = (int)ceil(log2(n));
+
+            // Bucket that we need to rehash
+            int bucketToMoveFrom = newBucket;
+            bucketToMoveFrom &= ~(1 << (digits - 1));
+
+            // Location of bucket that we need to rehash
+            int bucketToMoveFromLoc = blockDirectory[bucketToMoveFrom];
+
+            int newOldBucketLoc = initBucket(indexFile);
+
+            char ch;
+            int intptr;
+            string overflowptr;
+
+            // indexFile.seekp(bucketToMoveFromLoc);
+            indexFile.seekp(0);
+
+            vector<Record> recordvec;
+
+            while(indexFile >> noskipws >> ch) {
+
+                if (ch == '$') {
+                    // If we have a $ char then we've reached the end of the block
+                    // If it's a valid overflow pointer, then go to it
+                    getline(indexFile,overflowptr,'$');
+                    intptr = stoi(overflowptr);
+                    printf("Overflow Pointer Read, value: %i\n", intptr);
+
+                    if (intptr > 0) {
+                        // indexFile.seekp(intptr);
+                    } else {
+                        break;
+                    }
+                }
+                if (ch != '{'){
+                    Record movingrecord = readRecord(indexFile);
+
+                    recordvec.push_back(movingrecord);
+                }
+            }
+
+            for(auto & element : recordvec) {
+                int movingBucketLoc = getLastBits(hash(record.id),digits);
+
+                int newBucketIdx = newBucket / BLOCK_SIZE;
+
+                element.print();
+
+                if (movingBucketLoc == newBucketIdx) {
+                    writeRecordToIndexFile(element, indexFile, blockDirectory[newBucketIdx],blockDirectory[newBucketIdx]+BLOCK_SIZE );
+                } else {
+                    writeRecordToIndexFile(element, indexFile, newOldBucketLoc, newOldBucketLoc + BLOCK_SIZE);
+                }
+            }
+
+            i = digits;
+        }
     }
 
     Record readRecord(fstream &inputFile) {
@@ -295,8 +356,16 @@ public:
 
         fstream indexFile(fName,ios::in);
 
-        int bucketIdx = getLastBits(hash(id),i);
-        int location = blockDirectory[bucketIdx];
+        int bucketLoc = getLastBits(hash(id),i);
+
+        if (bucketLoc >= n) {
+            printf("Set bucket index MSB to 0\n");
+            bucketLoc &= ~(1 << (i-1));
+        }
+
+        printf("Searching bucket %i for id %i\n", bucketLoc, id);
+
+        int location = blockDirectory[bucketLoc];
 
         string overflowptr;
         int intptr;
