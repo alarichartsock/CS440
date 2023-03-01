@@ -20,7 +20,7 @@ int main(int argc, char* const argv[]) {
 
     // Create the index
     LinearHashIndex emp_index("EmployeeIndex");
-    emp_index.createFromFile("Employee1.csv");
+    emp_index.createFromFile("Employee.csv");
     
     // Loop to lookup IDs until user is ready to quit
     while (1==1) {

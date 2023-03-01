@@ -287,8 +287,6 @@ private:
 
                 int newBucketIdx = newBucket / BLOCK_SIZE;
 
-                element.print();
-
                 if (movingBucketLoc == newBucketIdx) {
                     writeRecordToIndexFile(element, indexFile, blockDirectory[newBucketIdx],blockDirectory[newBucketIdx]+BLOCK_SIZE );
                 } else {
@@ -395,7 +393,6 @@ public:
                 if (record.id == id) {
                     record.print();
                 }
-                // record.print();
             }
         }
 
