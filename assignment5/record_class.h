@@ -31,6 +31,20 @@ class Records{
     int number_of_dept_records = 0; //Track number of dept_records you have on the buffer
 };
 
+void printEmp(Records r) {
+    cout << "\tEID: " << r.emp_record.eid << "\n";
+    cout << "\tENAME: " << r.emp_record.ename << "\n";
+    cout << "\tAGE: " << r.emp_record.age << "\n";
+    cout << "\tSALARY: " << r.emp_record.salary << "\n\n";
+}
+
+void printDept(Records r) {
+    cout << "\tDID: " << r.dept_record.did << "\n";
+    cout << "\tDNAME: " << r.dept_record.dname << "\n";
+    cout << "\tBUDGET: " << r.dept_record.budget << "\n";
+    cout << "\tMANAGERID: " << r.dept_record.managerid << "\n\n";
+}
+
 // Grab a single block from the Emp.csv file and put it inside the EmpRecord structure of the Records Class
 Records Grab_Emp_Record(fstream &empin) {
     string line, word;
