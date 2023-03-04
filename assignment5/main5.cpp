@@ -187,14 +187,21 @@ void PrintJoin() {
     return;
 }
 
-//Use main memory to Merge and Join tuples 
-//which are already sorted in 'runs' of the relations Dept and Emp 
-void Merge_Join_Runs(int numemp, int numdep){
-
+//Use main memory to Merge and Join tuples
+//which are already sorted in 'runs' of the relations Dept and Emp
+void Merge_Join_Runs(int numemp, int numdep) {                 // <--------- note to self: use num_dept_files here!
     using t_FileStreams = ::std::array<::std::fstream, 22>;
 
-    t_FileStreams empfstream;
     t_FileStreams depfstream;
+    t_FileStreams empfstream;
+
+    // Opening filestreams for dept runs
+    for(int i=0; i<numdep;i++) {
+        std::string dep("dep");
+        string str = to_string(i);
+        str.insert(0, dep);
+        depfstream[i].open(str,ios::in);
+    }
 
     // Opening filestreams for emp runs
     for(int i=0; i<numemp;i++) {
@@ -204,49 +211,103 @@ void Merge_Join_Runs(int numemp, int numdep){
         empfstream[i].open(str,ios::in);
     }
 
+    // Initialize dep and emp holding arrays
+    Records cur_dep[numdep];
+    Records cur_emp[numemp];
+
+    // Fill first dep records
+    for(int i=0; i<numdep; i++) {
+        Records r = Grab_Dept_Record(depfstream[i]);
+        cur_dep[i] = r;
+    }
+
+    // Fill first dep records
+    for(int i=0; i<numemp; i++) {
+        Records r = Grab_Dept_Record(empfstream[i]);
+        cur_emp[i] = r;
+    }
+
+    // open the output file
+    ofstream outfile("Join.csv");
+
+
+    while(true) {
+        int min_index = -1;
+        int min_did = INT_MAX;
+        for(int i = 0; i < numdep; i++){
+            if(cur_dep[i].no_values != -1 && cur_dep[i].dept_record.did < min_did){ // if the record is not empty and the eid is smaller than the current smallest eid
+                // update the smallest eid and the index of the file that contains the smallest record
+                min_did = cur_dep[i].dept_record.did;
+                min_index = i;
+            }
+        }
+        if(min_index == -1){
+            // if the index is -1, then all the records have been written to the output file
+            break;
+        }
+        int managerid = cur_dep[min_index].dept_record.managerid;
+        outfile << cur_dep[min_index].dept_record.did << "," << cur_dep[min_index].dept_record.dname << "," << cur_dep[min_index].dept_record.budget << "," << cur_dep[min_index].dept_record.managerid;
+        cout << cur_dep[min_index].dept_record.did << "," << cur_dep[min_index].dept_record.dname << "," << cur_dep[min_index].dept_record.budget << "," << cur_dep[min_index].dept_record.managerid;
+        cur_dep[min_index] = Grab_Dept_Record(depfstream[min_index]);
+
+        bool found = false;
+
+        while(found == false) {
+            int min_index = -1;
+            int min_eid = INT_MAX;
+            for(int i = 0; i < numemp; i++){
+                if(cur_emp[i].no_values != -1 && cur_emp[i].emp_record.eid < min_eid){ // if the record is not empty and the eid is smaller than the current smallest eid
+                    // update the smallest eid and the index of the file that contains the smallest record
+                    min_eid = cur_emp[i].emp_record.eid;
+                    min_index = i;
+                }
+            }
+            if(min_index == -1){
+                // if the index is -1, then all the records have been written to the output file
+                break;
+            }
+            int eid = cur_emp[min_index].emp_record.eid;
+            if (eid == managerid) {
+                found = true;
+                cout << "," << cur_emp[min_index].emp_record.ename << "," << cur_emp[min_index].emp_record.age << "," << cur_emp[min_index].emp_record.salary << endl;
+                outfile << "," << cur_emp[min_index].emp_record.ename << "," << cur_emp[min_index].emp_record.age << "," << cur_emp[min_index].emp_record.salary << endl;
+            } else {
+                cur_emp[min_index] = Grab_Emp_Record(empfstream[min_index]);
+            }
+        }
+    }
+
+    // Closing filestreams for dept runs
+    for(int i=0; i<numdep;i++) {
+        depfstream[i].close();
+    }
+
+    // Closing filestreams for emp runs
+    for(int i=0; i<numemp;i++) {
+        empfstream[i].close();
+    }
+
     // Opening filestreams for dept runs
     for(int i=0; i<numdep;i++) {
-        std::string emp("dep");
+        std::string dep("dep");
+        string str = to_string(i);
+        str.insert(0, dep);
+        remove(str.c_str());
+    }
+
+    // Opening filestreams for emp runs
+    for(int i=0; i<numemp;i++) {
+        std::string emp("emp");
         string str = to_string(i);
         str.insert(0, emp);
-        depfstream[i].open(str,ios::in);
-    }
-
-    bool flag = true;
-
-    while(flag) {
-        int numEmptyEmp = 0;
-        int numEmptyDep = 0;
-
-        for(int i=0; i<numemp; i++) {
-            Records r = Grab_Emp_Record(empfstream[i]);
-            
-            if (r.no_values == -1) {
-                numEmptyEmp += 1;
-            } else {
-                printEmp(r);
-            }
-        }
-        for(int i=0; i<numdep; i++) {
-            Records r = Grab_Dept_Record(depfstream[i]);
-            
-            if (r.no_values == -1) {
-                numEmptyDep += 1;
-            } else {
-                printDept(r);
-            }
-        }
-
-        if ((numEmptyEmp == numemp) && (numEmptyDep == numdep)) {
-            flag = false;
-        }
-
+        remove(str.c_str());
     }
 
 
-    //and store the Joined new tuples using PrintJoin() 
-    return;
 }
+
+
+
 int main() {
     //Open file streams to read and write
     //Opening out two relations Emp.csv and Dept.csv which we want to join
